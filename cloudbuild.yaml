@@ -1,0 +1,35 @@
+# Build and push the Strapi image to Artifact Registry (project: gogocash-cms).
+#
+# Prereq: create repository once —
+#   gcloud artifacts repositories create strapi \
+#     --repository-format=docker --location=asia-southeast1 --project=gogocash-cms
+#
+# Submit:
+#   cd strapi-learn-cms
+#   gcloud builds submit --config=cloudbuild.yaml --project=gogocash-cms
+#
+# Override region/repo name:
+#   gcloud builds submit --config=cloudbuild.yaml --project=gogocash-cms \
+#     --substitutions=_REGION=asia-southeast1,_AR_REPO=strapi,_SERVICE=strapi
+
+substitutions:
+  _REGION: asia-southeast1
+  _AR_REPO: strapi
+  _SERVICE: strapi
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:latest
+      - .
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:latest
