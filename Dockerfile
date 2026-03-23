@@ -17,7 +17,9 @@ ENV NODE_ENV=production
 RUN npm run build && npm prune --omit=dev
 
 ENV HOST=0.0.0.0
+# Cloud Run sets PORT (default 8080); Strapi reads PORT in config/server.ts
+ENV PORT=8080
 
-EXPOSE 1337
+EXPOSE 8080
 
 CMD ["npm", "run", "start"]

@@ -1,0 +1,58 @@
+# Deploy Strapi to Cloud Run via Cloud Build (project: gogocash-cms).
+#
+# Setup (once):
+# 1. Create a GCP service account with roles:
+#    - Cloud Build Editor (or cloudbuild.builds.editor)
+#    - Service Account User on the default Compute SA (for Cloud Run)
+#    - (Optional) Storage if using Cloud Build default bucket
+# 2. JSON key → GitHub secret GCP_SA_KEY on this repo.
+# 3. GitHub repo variable GCP_CLOUDSQL_CONNECTION_NAME = gogocash-cms:REGION:INSTANCE_ID
+# 4. Cloud Build default SA (PROJECT@cloudbuild.gserviceaccount.com): roles/run.admin,
+#    roles/iam.serviceAccountUser on PROJECT_NUMBER-compute@developer.gserviceaccount.com
+#
+# See README "Production deploy" and landing docs/strapi-gcp-runbook.md
+
+name: Deploy to GCP Cloud Run
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-strapi-gcp-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GCP_PROJECT_ID: gogocash-cms
+  GCP_REGION: asia-southeast1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Submit Cloud Build (build + deploy)
+        env:
+          SQL_INSTANCE: ${{ vars.GCP_CLOUDSQL_CONNECTION_NAME }}
+        run: |
+          if [ -z "$SQL_INSTANCE" ] || [ "$SQL_INSTANCE" = "gogocash-cms:asia-southeast1:REPLACE_WITH_CLOUDSQL_INSTANCE" ]; then
+            echo "Set GitHub variable GCP_CLOUDSQL_CONNECTION_NAME to your Cloud SQL connection name (project:region:instance)."
+            exit 1
+          fi
+          gcloud builds submit \
+            --project="${{ env.GCP_PROJECT_ID }}" \
+            --config=cloudbuild.deploy.yaml \
+            --substitutions=_REGION=${{ env.GCP_REGION }},_SQL_INSTANCE="$SQL_INSTANCE"
