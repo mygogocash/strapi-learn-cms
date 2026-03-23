@@ -2,6 +2,8 @@
 
 Strapi 5 CMS for **GoGoCash Learn** (`/learn` on the landing site). REST collection: **`learn-articles`**.
 
+**Repository:** [github.com/mygogocash/strapi-learn-cms](https://github.com/mygogocash/strapi-learn-cms)
+
 ## Local development
 
 ```bash
